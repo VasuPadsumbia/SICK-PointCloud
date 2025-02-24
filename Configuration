@@ -1,0 +1,12 @@
+Command : python -m finding_and_connecting_devices.python.find_sensor -i"192.168.1.1"
+Device name:  Visionary-S CX V3S102-1x
+SerialNumber: 24400045
+MAC Address:  00:06:77:16:2F:FF
+IP Address:   192.168.1.10
+Network Mask: 255.255.255.0
+CoLa port:    2112
+CoLa version: 1
+Number of found devices:  1
+
+Command : python -m finding_and_connecting_devices.python.hello_sensor -i"192.168.1.10" -d"Visionary-S"
+DeviceIdent: Visionary-S CX V3S102-1x 6.0.0.0R

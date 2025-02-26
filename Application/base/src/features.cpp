@@ -108,8 +108,22 @@ std::tuple<pcl::PointCloud<pcl::PointXYZ>,
   }
 
   std::vector<Eigen::Vector3d> largest_cluster_points;
-    #pragma omp parallel for
-  for (int i = 0; i < static_cast<int>(cluster_indices[0].indices.size()); ++i)
+  #pragma omp parallel
+  {
+    std::vector<Eigen::Vector3d> local_points;
+    #pragma omp for nowait
+    for (int i = 0; i < static_cast<int>(cluster_indices[0].indices.size()); ++i)
+    {
+      int idx = cluster_indices[0].indices[i];
+      local_points.push_back(
+        Eigen::Vector3d(cloud_xyz->points[idx].x, cloud_xyz->points[idx].y, cloud_xyz->points[idx].z));
+    }
+    #pragma omp critical
+    {
+      largest_cluster_points.insert(largest_cluster_points.end(), local_points.begin(), local_points.end());
+    }
+  }
+  /* for (int i = 0; i < static_cast<int>(cluster_indices[0].indices.size()); ++i)
   {
     int idx = cluster_indices[0].indices[i];
     #pragma omp critical
@@ -124,12 +138,38 @@ std::tuple<pcl::PointCloud<pcl::PointXYZ>,
     const auto& p = largest_cluster_points[i];
     #pragma omp critical
     largest_cluster_points_2d.emplace_back(p.x(), p.y());
+  }*/
+  std::vector<cv::Point2f> largest_cluster_points_2d;
+  #pragma omp parallel
+  {
+    std::vector<cv::Point2f> local_points_2d;
+    #pragma omp for nowait
+    for (int i = 0; i < static_cast<int>(largest_cluster_points.size()); ++i)
+    {
+      const auto& p = largest_cluster_points[i];
+      local_points_2d.emplace_back(p.x(), p.y());
+    }
+    #pragma omp critical
+    largest_cluster_points_2d.insert(largest_cluster_points_2d.end(), local_points_2d.begin(), local_points_2d.end());
   }
-
   std::vector<int> hull_indices;
   cv::convexHull(largest_cluster_points_2d, hull_indices, false);
 
   pcl::PointCloud<pcl::PointXYZ> hull;
+  #pragma omp parallel
+  {
+    pcl::PointCloud<pcl::PointXYZ> local_hull;
+    #pragma omp for nowait
+    for (int i = 0; i < static_cast<int>(hull_indices.size()); ++i)
+    {
+      int idx = hull_indices[i];
+      local_hull.push_back(pcl::PointXYZ(
+        largest_cluster_points[idx].x(), largest_cluster_points[idx].y(), largest_cluster_points[idx].z()));
+    }
+    #pragma omp critical
+    hull += local_hull;
+  }
+ /* pcl::PointCloud<pcl::PointXYZ> hull;
     #pragma omp parallel for
   for (int i = 0; i < static_cast<int>(hull_indices.size()); ++i)
   {
@@ -137,7 +177,7 @@ std::tuple<pcl::PointCloud<pcl::PointXYZ>,
     #pragma omp critical
     hull.push_back(
       pcl::PointXYZ(largest_cluster_points[idx].x(), largest_cluster_points[idx].y(), largest_cluster_points[idx].z()));
-  }
+  }*/
 
   Eigen::Vector3d centroid = Eigen::Vector3d::Zero();
   if (!hull.empty())

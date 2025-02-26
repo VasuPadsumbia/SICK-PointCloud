@@ -44,8 +44,9 @@ add_executable(ObjectProcessor
 ObjectProcessor.cpp)
 add_executable(OPCTest
 OPCTest.cpp)
-add_executable(app
-app.cpp)
+add_executable(comm_worker Communication.cpp)
+add_executable(pos_worker PositionData.cpp)
+add_executable(main_app app.cpp )#PositionData.cpp Communication.cpp)
 
 target_include_directories(ObjectProcessor
   PRIVATE )#${PCL_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
@@ -53,8 +54,14 @@ target_include_directories(ObjectProcessor
 target_include_directories(OPCTest
   PRIVATE )#${PCL_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
 
-target_include_directories(app
+target_include_directories(comm_worker
   PRIVATE ${PCL_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
+
+target_include_directories(pos_worker
+  PRIVATE ${PCL_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
+
+target_include_directories(main_app
+  PRIVATE)# ${PCL_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
 
 target_link_libraries(ObjectProcessor
   ${APPLICATION_BASE_NAME}
@@ -73,7 +80,17 @@ target_link_libraries(OPCTest
   #${OpenCV_LIBRARIES}
 
 )
-target_link_libraries(app
+
+target_link_libraries(comm_worker
+    ${APPLICATION_BASE_NAME}
+    spng_miniz
+)
+
+target_link_libraries(pos_worker 
+    ${APPLICATION_BASE_NAME}
+    spng_miniz
+)
+target_link_libraries(main_app
   ${APPLICATION_BASE_NAME}
   spng_miniz
   #open62541::open62541

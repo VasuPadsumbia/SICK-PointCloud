@@ -45,7 +45,7 @@ void PLCData::connect()
 
 bool PLCData::readData(const std::string& address)
 {
-  std::cout << "Reading data from address: " << address << std::endl;
+  //std::cout << "Reading data from address: " << address << std::endl;
 
   if (!client_)
   {
@@ -101,7 +101,7 @@ void PLCData::writeData(const std::string& address, UA_Double data)
     throw std::runtime_error("Failed to write data to the OPC UA server");
   }
 
-  std::cout << "Data written successfully for address: " << address << std::endl;
+  //std::cout << "Data written successfully for address: " << address << std::endl;
 
   if (value.data)
   {

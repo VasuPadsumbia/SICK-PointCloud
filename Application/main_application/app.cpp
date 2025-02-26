@@ -1,21 +1,14 @@
-#include <application_base_modules/Camera.h>
-#include <application_base_modules/PLCData.h>
-#include <atomic>
-#include <chrono>
 #include <future>
 #include <iostream>
-#include <mutex>
 #include <thread>
+//#include "PositionData.cpp"
+//#include "Communication.cpp"
 #include <boost/process.hpp>
 #include <boost/interprocess/ipc/message_queue.hpp>
 #include <boost/interprocess/shared_memory_object.hpp>
 #include <boost/interprocess/mapped_region.hpp>
 
-
-namespace bp = boost::process;
-namespace bip = boost::interprocess;
-
-class Communication
+/*class Communication
 {
 public:
   Communication() : stop_event(false), opc(deviceIpAddr, port) // Initialize opc with deviceIpAddr and port
@@ -190,54 +183,109 @@ private:
   int               current_id = 0;
   std::atomic<bool> stop_event;
   bool              OPC_Connect;
-};
-
-int main()
+};*/
+/*
+void start_communication_worker()
 {
+  std::promise<void>       exit_signal;
+  std::shared_future<void> future_obj = exit_signal.get_future();
+  bip::message_queue       mq(bip::open_only, "message_queue");
+
+  Communication comm;
+  comm.worker(mq, exit_signal, future_obj);
+}
+
+void start_positiondata_worker()
+{
+  std::promise<void>       exit_signal;
+  std::shared_future<void> future_obj = exit_signal.get_future();
+  bip::message_queue       mq(bip::open_only, "message_queue");
+
+  PositionData pos;
+  pos.worker(mq, exit_signal, future_obj);
+}*/
+namespace bp  = boost::process;
+namespace bip = boost::interprocess;
+
+int main(int argc, char* argv[])
+{
+  /* if (argc > 1)
+  {
+    std::string arg = argv[1];
+    if (arg == "--comm")
+    {
+      start_communication_worker();
+      return 0;
+    }
+    else if (arg == "--pos")
+    {
+      start_positiondata_worker();
+      return 0;
+    }
+  }*/
   std::promise<void>        exit_signal;
-  std::shared_future<void>         future_obj = exit_signal.get_future();
-  std::promise<std::string>       data_promise;
-  std::shared_future<std::string> data_future = data_promise.get_future().share();
-  std::promise<bool>        connect_promise;
-  std::shared_future<bool>  connect_future = connect_promise.get_future().share();
+  std::shared_future<void>  future_obj = exit_signal.get_future();
 
   bip::message_queue::remove("message_queue");
   bip::message_queue mq(bip::create_only, "message_queue", 100, sizeof(std::string));
 
-  Communication comm;
-  PositionData  pos;
+  bip::message_queue::remove("op_connect_queue");
+  bip::message_queue op_connect_queue(bip::create_only, "op_connect_queue", 100, sizeof(bool));
 
-  bp::child comm_process(
-    bp::exe     = bp::search_path("cmd"),
-    bp::args    = {"/C", "echo Communication process started"},
-    bp::on_exit = [&comm, &mq, &exit_signal, &future_obj](int exit_code, const std::error_code& ec) {
-    
-    //bp::on_exit = [&comm, &exit_signal, &future_obj, &data_future, &connect_promise](int                    exit_code,
-                                                                                     //const std::error_code& ec) {
-      comm.worker(mq, exit_signal, future_obj); //, data_future, connect_promise);
-    });
+  //bp::child comm_process(bp::search_path("app"), bp::args = {"--comm"});
+  //bp::child pos_process(bp::search_path("app"), bp::args = {"--pos"});
 
-  bp::child pos_process(
-    bp::exe     = bp::search_path("cmd"),
-    bp::args    = {"/C", "echo PositionData process started"},
-    bp::on_exit = [&pos, &mq, &exit_signal, &future_obj](int exit_code, const std::error_code& ec) {
-    //bp::on_exit = [&pos, &exit_signal, &future_obj, &data_promise, &connect_future](int                    exit_code,
-                                                                                    //const std::error_code& ec) {
-      pos.worker(mq, exit_signal, future_obj); //data_promise, connect_future);
-    });
+  try
+  {
+    auto comm_worker_path = bp::search_path("comm_worker");
+    auto pos_worker_path  = bp::search_path("pos_worker");
 
-  std::this_thread::sleep_for(std::chrono::seconds(10)); // Run for 10 seconds
+    if (comm_worker_path.empty() || pos_worker_path.empty())
+    {
+      std::cerr << "Error: comm_worker or pos_worker not found in PATH." << std::endl;
+      return 1;
+    }
+
+    bp::child comm_process(bp::search_path("comm_worker"));
+    bp::child pos_process(bp::search_path("pos_worker"));
+
+    std::this_thread::sleep_for(std::chrono::seconds(10)); // Run for 10 seconds
+
+    comm_process.wait();
+    pos_process.wait();
+  }
+  catch (const boost::process::process_error& e)
+  {
+    std::cerr << "Process error: " << e.what() << std::endl;
+    return 1;
+  }
+  catch (const std::exception& e)
+  {
+    std::cerr << "An error occurred: " << e.what() << std::endl;
+    return 1;
+  }
+
+  bip::message_queue::remove("message_queue");
+  bip::message_queue::remove("op_connect_queue");
+   
+  std::cout << "Processes stopped." << std::endl;
+
+  return 0;
+  //bp::child comm_process(bp::search_path("comm_worker"));
+  //bp::child pos_process(bp::search_path("pos_worker"));
+
+  //std::this_thread::sleep_for(std::chrono::seconds(10)); // Run for 10 seconds
  
   //std::cout << "Stopping processes..." << std::endl;
   //exit_signal.set_value();
   //comm.stopWorker();
   //pos.stopWorker();
 
-  comm_process.wait();
-  pos_process.wait();
+  //comm_process.wait();
+  //pos_process.wait();
 
-  bip::message_queue::remove("message_queue");
-  std::cout << "Processes stopped." << std::endl;
+  //bip::message_queue::remove("message_queue");
+  //std::cout << "Processes stopped." << std::endl;
 
-  return 0;
+  //return 0;
 }

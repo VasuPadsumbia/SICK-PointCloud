@@ -277,7 +277,7 @@ ExitCode Camera::processFrame(bool image_plot, bool point_cloud_plot, bool PCD, 
     //auto end_time = std::chrono::high_resolution_clock::now();
     //std::chrono::duration<double> elapsed_seconds = end_time - start_time;
     //std::cout << "Point cloud process time: " << elapsed_seconds.count() << "s\n";
-    this->ltimestamp_ms = pDataHandler->getTimestampMS();
+    this->timestamp_ms = pDataHandler->getTimestampMS();
     std::time_t       timestamp_s  = timestamp_ms / 1000;
     std::tm           tm           = *std::gmtime(&timestamp_s);
     std::stringstream ss;

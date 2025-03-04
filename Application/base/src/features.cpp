@@ -63,7 +63,7 @@ std::vector<Eigen::Vector2d> PointCloudProcessor::projectTo2D(
   {
     projected_points.emplace_back(p.x(), p.y());
   }
-  std::cout << "Projected points count: " << projected_points.size() << std::endl;
+  //std::cout << "Projected points count: " << projected_points.size() << std::endl;
   return projected_points;
 }
 
@@ -78,11 +78,6 @@ std::tuple<pcl::PointCloud<pcl::PointXYZ>,
   }
 
   pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>);
-  //for (const auto& p : points)
-  //{
-  //  cloud_xyz->points.emplace_back(p.x, p.y, p.z);
-  //}
-  // Downsample the point cloud
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_xyz(new pcl::PointCloud<pcl::PointXYZ>);
   pcl::VoxelGrid<pcl::PointXYZ>       sor;
   sor.setInputCloud(points.makeShared());
@@ -100,7 +95,7 @@ std::tuple<pcl::PointCloud<pcl::PointXYZ>,
   ec.setSearchMethod(tree);
   ec.setInputCloud(cloud_xyz);
   ec.extract(cluster_indices);
-  std::cout << "eps: " << eps << ", min_samples: " << min_samples << std::endl;
+  //std::cout << "eps: " << eps << ", min_samples: " << min_samples << std::endl;
   if (cluster_indices.empty())
   {
     std::cout << "No valid clusters found." << std::endl;
@@ -123,22 +118,7 @@ std::tuple<pcl::PointCloud<pcl::PointXYZ>,
       largest_cluster_points.insert(largest_cluster_points.end(), local_points.begin(), local_points.end());
     }
   }
-  /* for (int i = 0; i < static_cast<int>(cluster_indices[0].indices.size()); ++i)
-  {
-    int idx = cluster_indices[0].indices[i];
-    #pragma omp critical
-    largest_cluster_points.push_back(
-      Eigen::Vector3d(cloud_xyz->points[idx].x, cloud_xyz->points[idx].y, cloud_xyz->points[idx].z));
-  }
 
-  std::vector<cv::Point2f> largest_cluster_points_2d;
-    #pragma omp parallel for
-  for (int i = 0; i < static_cast<int>(largest_cluster_points.size()); ++i)
-  {
-    const auto& p = largest_cluster_points[i];
-    #pragma omp critical
-    largest_cluster_points_2d.emplace_back(p.x(), p.y());
-  }*/
   std::vector<cv::Point2f> largest_cluster_points_2d;
   #pragma omp parallel
   {
@@ -169,15 +149,6 @@ std::tuple<pcl::PointCloud<pcl::PointXYZ>,
     #pragma omp critical
     hull += local_hull;
   }
- /* pcl::PointCloud<pcl::PointXYZ> hull;
-    #pragma omp parallel for
-  for (int i = 0; i < static_cast<int>(hull_indices.size()); ++i)
-  {
-    int idx = hull_indices[i];
-    #pragma omp critical
-    hull.push_back(
-      pcl::PointXYZ(largest_cluster_points[idx].x(), largest_cluster_points[idx].y(), largest_cluster_points[idx].z()));
-  }*/
 
   Eigen::Vector3d centroid = Eigen::Vector3d::Zero();
   if (!hull.empty())
@@ -266,3 +237,4 @@ void PointCloudProcessor::visualizePointCloudWithContour(const pcl::PointCloud<p
 
   viewer->spin();
 }
+

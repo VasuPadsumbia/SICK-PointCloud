@@ -3,7 +3,12 @@
 #include <boost/interprocess/ipc/message_queue.hpp>
 #include <future>
 #include <iostream>
+#include <chrono>
+#include <iomanip>
+#include <sstream>
 
+// Existing code
+std::stringstream ss;
 namespace bip = boost::interprocess;
 
 class Communication
@@ -27,14 +32,21 @@ public:
       {
         if (opc.isConnected)
         {
+          auto time_start = std::chrono::high_resolution_clock::now();
+          std::vector<char> buffer(4096); // Buffer to receive data
           std::string json_data;
           unsigned int priority;
           bip::message_queue::size_type recvd_size;
-          if (mq.try_receive(&json_data, sizeof(json_data), recvd_size, priority))
+		 
+          if (mq.try_receive(buffer.data(), buffer.size(), recvd_size, priority))
           {
-            opc.dataProcessing(json_data);
-          }
+              std::string json_data(buffer.data(), recvd_size);
+			  std::cout << "Received data: " << json_data << std::endl;
+              opc.dataProcessing(json_data);
+			  printTimestamp();
+           }
           bool OPC_Connect = opc.readData(connect_node_id);
+		  std::cout << "OPC_Connect: " << OPC_Connect << std::endl;
           op_connect_queue.send(&OPC_Connect, sizeof(OPC_Connect), 0);
           if (OPC_Connect)
           {
@@ -44,6 +56,9 @@ public:
           {
             std::cout << "CODESYS not ready to receive data." << std::endl;
           }
+          auto time_end = std::chrono::high_resolution_clock::now();
+          std::chrono::duration<double> elapsed_seconds = time_end - time_start;
+          std::cout << "Communication processing time: " << elapsed_seconds.count() << "s\n";
         }
         else
         {
@@ -82,6 +97,18 @@ private:
   std::string newpos_node_id = base_node_id + ".OPC_UA.newPos";
   std::string time_node_id = base_node_id + ".OPC_UA.TimeStamp";
   PLCData opc;
+
+  void printTimestamp()
+  {
+      auto now = std::chrono::system_clock::now();
+      auto in_time_t = std::chrono::system_clock::to_time_t(now);
+      auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
+
+      std::stringstream ss;
+      ss << std::put_time(std::localtime(&in_time_t), "[%Y-%m-%d %H:%M:%S");
+      ss << '.' << std::setw(3) << std::setfill('0') << ms.count() << ']';
+      std::cout << ss.str() << std::endl;
+  }
 };
 
 int main()

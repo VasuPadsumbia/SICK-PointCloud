@@ -8,10 +8,14 @@
 #include <chrono>
 #include <thread>
 #include <application_base_modules/Camera.h>
-#include <application_base_modules/PLCData.h>
 
 int main(int argc, char* argv[])
 {
+	char response_vis;
+	char response_centroid;
+	char response_depth;
+	char response_default;
+
   /// Default values:
   /// IP:        "
   std::string deviceIpAddr("192.168.1.10");
@@ -24,28 +28,68 @@ int main(int argc, char* argv[])
   Eigen::Vector3d      point_color;
   double eps = 0.05;
   int min_samples = 15;
-  //PLCData                           plc_data("localhost", 4841);
-  std::shared_ptr<PLCData> plc_data        = std::make_shared<PLCData>("localhost", 4841);
   auto    init_start_time = std::chrono::high_resolution_clock::now();
   //camera.setROI(215, 535, 151, 384);
   camera.initializeStream();
   auto init_end_time = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double> init_elapsed_seconds = init_end_time - init_start_time;
   std::cout << "Initialization time: " << init_elapsed_seconds.count() << "s\n";
+  std::cout << "Do you want to set to default configuration? (y/n): ";
+  std::cin >> response_default;
+
+  if (response_default == 'y')
+  {
+	  response_vis = 'n';
+	  response_centroid = 'y';
+	  response_depth = 'n';
+  }
+  else
+  {
+	  // Ask the user if they want to calibrate the depth range
+	  std::cout << "Do you want to visualize and pick points for the depth data? (y/n): ";
+	  std::cin >> response_vis;
+	  std::cout << "Do you want to get centroid and point color? (y/n): ";
+	  std::cin >> response_centroid;
+	  std::cout << "Do you want to set the depth range? (y/n): ";
+	  std::cin >> response_depth;
+  }
   
   auto start_time = std::chrono::high_resolution_clock::now();
-  camera.processFrame(false, false, false, false, false, false);
- 
-  //camera.setDepthRange(std::make_tuple(0.533, 0.538));
-  camera.setDepthRange(std::make_tuple(0.5065, 0.512));
-  std::tie(contours, centroid, point_color)     = camera.getContours(false, eps, min_samples);
+  if (response_vis == 'y')
+  {
+	  camera.processFrame(false, true, false, false, false, false);
+  }
+  else
+  {
+	  camera.processFrame(false, false, false, false, false, false);
+  }
+  
+  if (response_centroid == 'y')
+  {
+	  if (response_depth == 'y')
+	  {
+		  std::cout << "Enter the minimum depth: ";
+		  float min_depth;
+		  std::cin >> min_depth;
+		  std::cout << "Enter the maximum depth: ";
+		  float max_depth;
+		  std::cin >> max_depth;
+		  camera.setDepthRange(std::make_tuple(min_depth, max_depth));
+	  }
+	  else
+	  {
+		  //camera.setDepthRange(std::make_tuple(0.533, 0.538));
+		  camera.setDepthRange(std::make_tuple(0.5065, 0.512));
+	  }
+	  std::tie(contours, centroid, point_color) = camera.getContours(true, eps, min_samples);
+	  std::cout << "Centroid: " << centroid << std::endl;
+	  std::cout << "Point color: " << point_color << std::endl;
+	  std::cout << "Contour size: " << contours.size() << std::endl;
+  }
+  
   auto                          end_time        = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double> elapsed_seconds = end_time - start_time;
-  std::cout << "Frame process time: " << elapsed_seconds.count() << "s\n";
-  
-  std::cout << "Centroid: " << centroid << std::endl;
-  std::cout << "Point color: " << point_color << std::endl;
-  std::cout << "Contour size: " << contours.size() << std::endl;
+  std::cout << "Frame process time: " << elapsed_seconds.count() << "s\n";  
 
   auto cleanup_start_time = std::chrono::high_resolution_clock::now();
   camera.cleanup();

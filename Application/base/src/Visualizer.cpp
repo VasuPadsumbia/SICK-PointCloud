@@ -42,12 +42,20 @@ void Visualizer::visualizePointCloud()
 
     // Set point size
     viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "sample cloud");
+    
+    // Add custom XYZ axes with thinner lines
+    pcl::PointXYZ origin(0.0, 0.0, 0.0);
+    pcl::PointXYZ x_axis(1.0, 0.0, 0.0);
+    pcl::PointXYZ y_axis(0.0, 1.0, 0.0);
+    pcl::PointXYZ z_axis(0.0, 0.0, 1.0);
 
-    // Add XYZ axes in red, green, and blue colors
-    viewer->addCoordinateSystem(1.0, "coordinate system");
+    viewer->addLine(origin, x_axis, 1.0, 0.0, 0.0, "x_axis");
+    viewer->addLine(origin, y_axis, 0.0, 1.0, 0.0, "y_axis");
+    viewer->addLine(origin, z_axis, 0.0, 0.0, 1.0, "z_axis");
 
-    // Set thinner lines for the XYZ axes
-    viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_LINE_WIDTH, 0.5, "coordinate system");
+    viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_LINE_WIDTH, 0.5, "x_axis");
+    viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_LINE_WIDTH, 0.5, "y_axis");
+    viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_LINE_WIDTH, 0.5, "z_axis");
 
     // Set up mouse event handler to display coordinates
     viewer->registerPointPickingCallback(&Visualizer::pointPickingCallback, *this);

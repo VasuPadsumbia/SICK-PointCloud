@@ -103,10 +103,10 @@ void PLCData::writeData(const std::string& address, UA_Double data)
 
   //std::cout << "Data written successfully for address: " << address << std::endl;
 
-  if (value.data)
-  {
-    std::cout << "UA Variant value: " << *(UA_Double*)value.data << std::endl;
-  }
+  //if (value.data)
+  //{
+  //  std::cout << "UA Variant value: " << *(UA_Double*)value.data << std::endl;
+  //}
 
   //UA_Variant_clear(&value);
   UA_NodeId_clear(&nodeId);
@@ -137,7 +137,7 @@ void PLCData::writeData(const std::string& address, const std::string& data)
     throw std::runtime_error("Failed to write data to the OPC UA server");
   }
 
-  std::cout << "Data written successfully for address: " << address << std::endl;
+  //std::cout << "Data written successfully for address: " << address << std::endl;
 
   //UA_Variant_clear(&value);
   UA_String_clear(&uaString);
@@ -167,7 +167,7 @@ void PLCData::writeData(const std::string& address, UA_UInt64 data)
     throw std::runtime_error("Failed to write data to the OPC UA server");
   }
 
-  std::cout << "Data written successfully for address: " << address << std::endl;
+  //std::cout << "Data written successfully for address: " << address << std::endl;
 
   //UA_Variant_clear(&value); // ✅ Only clear once
   UA_NodeId_clear(&nodeId);
@@ -198,12 +198,12 @@ void PLCData::writeData(const std::string& address, UA_Int32 data)
     throw std::runtime_error("Failed to write data to the OPC UA server");
   }
 
-  std::cout << "Data written successfully for address: " << address << std::endl;
+  //std::cout << "Data written successfully for address: " << address << std::endl;
 
-  if (value.data)
-  {
-    std::cout << "UA Variant value: " << *(UA_Int32*)value.data << std::endl;
-  }
+  //if (value.data)
+  //{
+  //  std::cout << "UA Variant value: " << *(UA_Int32*)value.data << std::endl;
+  //}
 
   //UA_Variant_clear(&value);
   UA_NodeId_clear(&nodeId);
@@ -233,12 +233,12 @@ void PLCData::writeData(const std::string& address, UA_Int16 data)
     throw std::runtime_error("Failed to write data to the OPC UA server");
   }
 
-  std::cout << "Data written successfully for address: " << address << std::endl;
+  //std::cout << "Data written successfully for address: " << address << std::endl;
 
-  if (value.data)
-  {
-    std::cout << "UA Variant value: " << *(UA_Int16*)value.data << std::endl;
-  }
+  //if (value.data)
+  //{
+  //  std::cout << "UA Variant value: " << *(UA_Int16*)value.data << std::endl;
+  //}
 
   //UA_Variant_clear(&value);
   UA_NodeId_clear(&nodeId);
@@ -276,28 +276,53 @@ void PLCData::TypeCheck(const std::string& address)
   }
   UA_Variant_clear(&value);
 }
-
+void PLCData::writeData(const std::string& address, UA_Variant* value)
+{
+    UA_StatusCode status = UA_Client_writeValueAttribute(client_, UA_NODEID_STRING(1, const_cast<char*>(address.c_str())), value);
+    if (status == UA_STATUSCODE_GOOD)
+    {
+        std::cout << "Data written successfully for address: " << address << std::endl;
+    }
+    else
+    {
+        std::cerr << "Failed to write data to the OPC UA server for address: " << address << " with status: " << UA_StatusCode_name(status) << std::endl;
+        throw std::runtime_error("Failed to write data to the OPC UA server");
+    }
+}
 void PLCData::dataProcessing(const std::string& json_data)
 {
   try
   {
     auto json_obj = nlohmann::json::parse(json_data);
 
-    // Extract values from JSON
-    double      x_pos     = json_obj.at("x").get<double>();
-    double      y_pos     = json_obj.at("y").get<double>();
-    double      z_pos     = json_obj.at("z").get<double>();
-    int         color     = json_obj.at("color").get<std::int32_t>();
-    int         id        = json_obj.at("id").get<std::int16_t>();
-    std::uint64_t timestamp = json_obj.at("timestamp").get<std::uint64_t>();
+    UA_Variant value;
+    UA_Variant_init(&value);
 
-    // Write values to OPC UA server
-    writeData(newpos_node_id + ".X_Pos", x_pos);
-    writeData(newpos_node_id + ".Y_Pos", y_pos);
-    writeData(newpos_node_id + ".Z_Pos", z_pos);
-    writeData(newpos_node_id + ".colour", color);
-    writeData(newpos_node_id + ".ID", id);
-    writeData(time_node_id, timestamp);
+    // Write x, y, z positions
+    std::vector<std::string> pos_addresses = { newpos_node_id + ".X_Pos", newpos_node_id + ".Y_Pos", newpos_node_id + ".Z_Pos" };
+    std::vector<double> pos_values = { json_obj["x"], json_obj["y"], json_obj["z"] };
+
+    for (size_t i = 0; i < pos_addresses.size(); ++i)
+    {
+        UA_Double pos_value = pos_values[i];
+        //std::cout << "UA Variant value: " << pos_value << std::endl;
+        writeData(pos_addresses[i], pos_value);
+    }
+
+    // Write color
+    UA_Int32 color_value = json_obj["color"];
+    //std::cout << "UA Variant value: " << color_value << std::endl;
+    writeData(newpos_node_id + ".colour", color_value);
+
+    // Write timestamp
+    UA_UInt64 timestamp_value = json_obj["timestamp"];
+    //std::cout << "UA Variant value: " << timestamp_value << std::endl;
+    writeData(time_node_id, timestamp_value);
+
+    // Write ID
+    UA_Int16 id_value = json_obj["id"];
+    //std::cout << "UA Variant value: " << id_value << std::endl;
+    writeData(newpos_node_id + ".ID", id_value);
   }
   catch (const std::exception& e)
   {

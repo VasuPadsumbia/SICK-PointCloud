@@ -3,8 +3,10 @@
 #include <future>
 #include <iostream>
 #include <nlohmann/json.hpp>
+#include <application_base_modules/PLCData.h>
 
 namespace bip = boost::interprocess;
+std::stringstream ss;
 
 class PositionData
 {
@@ -34,38 +36,48 @@ public:
         {
           if (&camera != nullptr)
           {
+			auto time_start = std::chrono::high_resolution_clock::now();
             std::cout << "Processing frame..." << std::endl;
             camera.initializeStream();
             camera.processFrame(false, false, false, false, false, false);
-            std::cout << "Setting depth range..." << std::endl;
+            //std::cout << "Setting depth range..." << std::endl;
             //camera.setDepthRange(std::make_tuple(0.555, 0.568));
             camera.setDepthRange(std::make_tuple(0.5065, 0.512));
             std::tie(contours, centroid, point_color) = camera.getContours(false, eps, min_samples);
             current_id = current_id + 1;
-            std::cout << "Centroid: " << centroid << std::endl;
-            std::cout << "Point color: " << point_color << std::endl;
-            std::cout << "Contour size: " << contours.size() << std::endl;
+            //std::cout << "Centroid: " << centroid << std::endl;
+            //std::cout << "Point color: " << point_color << std::endl;
+            //std::cout << "Contour size: " << contours.size() << std::endl;
 
             nlohmann::json json_obj;
-            json_obj["x"] = centroid(0);
-            std::cout << "x: " << centroid(0) << std::endl;
-            json_obj["y"] = centroid(1);
-            std::cout << "y: " << centroid(1) << std::endl;
-            json_obj["z"] = centroid(2);
-            std::cout << "z: " << centroid(2) << std::endl;
+            json_obj["x"] = centroid(0)*100;
+            json_obj["y"] = centroid(1)*100;
+            json_obj["z"] = centroid(2)*100;
             json_obj["color"] = 2;
             json_obj["id"] = current_id;
-            std::cout << "id: " << current_id << std::endl;
-            json_obj["timestamp"] = camera.getTimestampMS();
-            std::cout << "timestamp: " << camera.getTimestampMS() << std::endl;
+			std::cout << "time elapsed: " << camera.getTimestampMS() - timestamp << std::endl;
+			timestamp = camera.getTimestampMS();
+            json_obj["timestamp"] = timestamp;// timestamp_value;
+            std::cout << "timestamp: " << timestamp << std::endl;
 
             std::string json_data = json_obj.dump();
-            if (json_data.size() > 1024)
+			std::cout << "json_data: " << json_data << std::endl;
+			//std::cout << "Json data size: " << json_data.size() << std::endl;
+            if (json_data.size() > 4096)
             {
               std::cerr << "Error: JSON data size exceeds message queue limit." << std::endl;
               continue;
             }
-            mq.send(json_data.c_str(), json_data.size(), 0);
+			mq.send(json_data.c_str(), json_data.size(), 0);
+			printTimestamp();
+
+			if (current_id >= 100)
+			{
+				current_id = 0;
+			}
+			auto time_end = std::chrono::high_resolution_clock::now();
+			std::chrono::duration<double> elapsed_seconds = time_end - time_start;
+			std::cout << "Position Data processing time: " << elapsed_seconds.count() << "s\n";
           }
           else
           {
@@ -92,8 +104,21 @@ private:
   int current_id = 0;
   std::atomic<bool> stop_event;
   bool OPC_Connect;
+  uint64_t timestamp;
   double            eps         = 0.05;
   int               min_samples = 15;
+
+  void printTimestamp()
+  {
+      auto now = std::chrono::system_clock::now();
+      auto in_time_t = std::chrono::system_clock::to_time_t(now);
+      auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
+
+      std::stringstream ss;
+      ss << std::put_time(std::localtime(&in_time_t), "[%Y-%m-%d %H:%M:%S");
+      ss << '.' << std::setw(3) << std::setfill('0') << ms.count() << ']';
+      std::cout << ss.str() << std::endl;
+  }
 };
 
 int main()

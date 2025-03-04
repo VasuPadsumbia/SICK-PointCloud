@@ -31,7 +31,7 @@ int main(int argc, char* argv[])
   // Create random number generator
   std::random_device               rd;
   std::mt19937                     gen(rd());
-  std::uniform_real_distribution<> dis_x(300.0, 900.0);
+  std::uniform_real_distribution<> dis_x(500.0, 900.0);
   std::uniform_real_distribution<> dis_y(-0.5, 136.5);
   std::uniform_real_distribution<> dis_z(-47, -15);
   std::uniform_int_distribution<>  dis_color(1, 4);
@@ -59,7 +59,7 @@ int main(int argc, char* argv[])
         // Create values for the ST_Pos structure
         UA_Double x_pos = dis_x(gen);
         UA_Double y_pos  = dis_y(gen);
-        UA_Double z_pos = -35;
+        UA_Double z_pos = 3;
         UA_Int32  color = dis_color(gen);
         UA_Int16  id     = current_id;
   
@@ -83,7 +83,7 @@ int main(int argc, char* argv[])
   
         std::cout << "ST_Pos structure updated successfully." << std::endl;
   
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         current_id++;
         if (current_id > 100)
           {

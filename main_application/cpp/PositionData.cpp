@@ -41,8 +41,8 @@ public:
             camera.initializeStream();
             camera.processFrame(false, false, false, false, false, false);
             //std::cout << "Setting depth range..." << std::endl;
-            //camera.setDepthRange(std::make_tuple(0.555, 0.568));
-            camera.setDepthRange(std::make_tuple(0.5065, 0.512));
+            camera.setDepthRange(std::make_tuple(0.554, 0.569));
+            //camera.setDepthRange(std::make_tuple(0.5065, 0.512));
             std::tie(contours, centroid, point_color) = camera.getContours(false, eps, min_samples);
             current_id = current_id + 1;
             //std::cout << "Centroid: " << centroid << std::endl;

@@ -219,8 +219,9 @@ uint64_t VisionaryData::getTimestamp() const
   return m_blobTimestamp;
 }
 
-uint64_t VisionaryData::getTimestampMS() const
+std::pair<uint64_t, uint64_t> VisionaryData::getTimestampMS() const
 {
+  auto    now = std::chrono::system_clock::now();
   std::tm tm{};
   tm.tm_sec   = static_cast<int>((m_blobTimestamp & BITMASK_SECOND) >> 10);
   tm.tm_min   = static_cast<int>((m_blobTimestamp & BITMASK_MINUTE) >> 16);
@@ -235,8 +236,9 @@ uint64_t VisionaryData::getTimestampMS() const
   auto seconds{std::chrono::seconds{::timegm(&tm)}};
 #endif
   const uint64_t timestamp = static_cast<uint64_t>(seconds.count()) * 1000u + (m_blobTimestamp & BITMASK_MILLISECOND);
+  uint64_t offset = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count() - timestamp;
 
-  return timestamp;
+  return std::make_pair(timestamp, offset);
 }
 
 const CameraParameters& VisionaryData::getCameraParameters() const

@@ -46,18 +46,20 @@ list(APPEND CAMERA_MODULE_LINK_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
 
 find_package(OpenMP REQUIRED)
 
-
 if(WIN32)
   list(APPEND CAMERA_MODULE_LINK_LIBRARIES wsock32 ws2_32)
 endif()
 
+set(VISIONARY_BASE_NAME sick_visionary_cpp_base::sick_visionary_cpp_base)
+set(SHARED_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../shared/cpp)
+
 # Add subdirectories for base/cpp and shared modules if not already added
-if (NOT TARGET sick_visionary_cpp_base)
-  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../base/cpp ${CMAKE_CURRENT_BINARY_DIR}/base_cpp)
+if (NOT TARGET ${VISIONARY_BASE_NAME})
+  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../base/cpp ${CMAKE_CURRENT_BINARY_DIR}/Application/base)
 endif()
 
 if (NOT TARGET shared_cpp_utils)
-  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../shared/cpp ${CMAKE_CURRENT_BINARY_DIR}/shared)
+  add_subdirectory(${SHARED_PATH} ${CMAKE_CURRENT_BINARY_DIR}/shared)
 endif()
 
 ### Include Eigen headers directly ###
@@ -91,8 +93,9 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories(${PCL_INCLUDE_DIRS})
 if (EIGEN3_FOUND)
   include_directories(${EIGEN3_INCLUDE_DIR})
- endif()
+endif()
 
+link_directories(${PCL_LIBRARY_DIRS})
 
 
 ### Link libraries ###
@@ -101,7 +104,17 @@ list(APPEND CAMERA_MODULE_LINK_LIBRARIES ${VTK_LIBRARIES})
 list(APPEND CAMERA_MODULE_LINK_LIBRARIES ${PCL_LIBRARIES})
 list(APPEND CAMERA_MODULE_LINK_LIBRARIES ${Eigen_LIBS})
 
-#link_directories(${PCL_LIBRARY_DIRS} ${VTK_LIBRARY_DIRS})
+link_directories(${CAMERA_MODULE_LINK_LIBRARIES} 
+    ${VTK_LIBRARIES}
+    open62541::open62541
+    sick_visionary_cpp_base::sick_visionary_cpp_base
+    shared_cpp_utils
+    Boost::process
+    ${OpenCV_LIBS} 
+    ${PCL_LIBRARIES_DIRS} 
+    ${Eigen_LIBS}
+    ${SHARED_PATH}
+)
 ### BUILD ###
 if (BUILD_SHARED_LIBS)
   message(STATUS "A shared library will be generated")
@@ -110,7 +123,11 @@ endif()
 set_target_properties(${TARGET_NAME} PROPERTIES
   CXX_STANDARD 11
   CXX_STANDARD_REQUIRED YES
-  CXX_EXTENSIONS OFF)
+  CXX_EXTENSIONS OFF
+  RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Application/base/cpp
+  LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Application/base/cpp
+  ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Application/base/cpp
+)
 
 set (CAMERA_MODULE_SRCS
   src/Camera.cpp
@@ -142,19 +159,21 @@ target_include_directories(${TARGET_NAME}
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../base/cpp/include>"
   PRIVATE
     ${CAMERA_MODULE_PRIVATE_INCLUDE_DIRS}
+    #${SHARED_PATH}
 )
 
 # Link with base/cpp and shared libraries
+target_link_libraries(${TARGET_NAME} ${CAMERA_MODULE_LINK_LIBRARIES})
 target_link_libraries(
-  ${TARGET_NAME}
-  
+    ${TARGET_NAME}
+    #${CAMERA_MODULE_LINK_LIBRARIES}
+    ${VISIONARY_BASE_NAME}
     ${VTK_LIBRARIES}
     open62541::open62541
-    sick_visionary_cpp_base::sick_visionary_cpp_base
     shared_cpp_utils
     Boost::process
     ${OpenCV_LIBS} 
-    ${PCL_LIBRARIES} 
+    ${PCL_LIBRARY} 
     ${Eigen_LIBS}
 )
 #target_link_libraries(${TARGET_NAME} ${VTK_LIBRARIES})
@@ -163,6 +182,16 @@ target_link_libraries(
 #target_link_libraries(${TARGET_NAME} PRIVATE open62541::open62541)
 # apply options
 target_compile_options(${TARGET_NAME} PRIVATE ${CAMERA_MODULE_CFLAGS})
+
+# Copy all linked DLLs
+foreach(dll ${PCL_LIBRARIES} ${VTK_LIBRARIES} ${OpenCV_LIBRARIES})
+    get_filename_component(dll_path ${dll} ABSOLUTE)
+    if(EXISTS ${dll_path} AND dll_path MATCHES "\\.dll$")
+        add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+          COMMAND ${CMAKE_COMMAND} -E copy_if_different ${dll_path} ${CMAKE_BINARY_DIR}/Application/base/cpp
+        )
+    endif()
+endforeach()
 
 # Installation
 include(GNUInstallDirs)
@@ -182,6 +211,9 @@ write_basic_package_version_file(
 install(TARGETS ${TARGET_NAME}
   EXPORT ${PROJECT_NAME}Targets
   FILE_SET publicHeaders
+  LIBRARY DESTINATION Application/base/cpp
+  ARCHIVE DESTINATION Application/base/cpp
+  RUNTIME DESTINATION Application/base/cpp
 )
 
 install(

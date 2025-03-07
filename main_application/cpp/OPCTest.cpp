@@ -32,7 +32,7 @@ int main(int argc, char* argv[])
   std::random_device               rd;
   std::mt19937                     gen(rd());
   std::uniform_real_distribution<> dis_x(500.0, 900.0);
-  std::uniform_real_distribution<> dis_y(-0.5, 136.5);
+  std::uniform_real_distribution<> dis_y(200, 306.5);
   std::uniform_real_distribution<> dis_z(-47, -15);
   std::uniform_int_distribution<>  dis_color(1, 4);
   //std::uniform_int_distribution<>  dis_id(1, 1000);
@@ -53,6 +53,7 @@ int main(int argc, char* argv[])
       {
         std::cout << "CODESYS not ready to receive data." << std::endl;
         std::this_thread::sleep_for(std::chrono::seconds(1));
+        current_id = 1;
       }
       else
       {
@@ -65,9 +66,9 @@ int main(int argc, char* argv[])
   
         // Get the current timestamp in nanoseconds
         auto     now             = std::chrono::system_clock::now();
-        auto     now_ns          = std::chrono::time_point_cast<std::chrono::nanoseconds>(now);
+        auto     now_ns          = std::chrono::time_point_cast<std::chrono::milliseconds>(now);
         auto     epoch           = now_ns.time_since_epoch();
-        UA_UInt64 timestamp_lword = static_cast<uint64_t>(epoch.count());
+        UA_UInt32 timestamp_lword = static_cast<uint32_t>(epoch.count());
   
         std::cout << "timestamp: " << timestamp_lword << std::endl;
         //plc_data.TypeCheck(time_node_id);

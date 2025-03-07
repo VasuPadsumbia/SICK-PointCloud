@@ -48,7 +48,7 @@ using namespace visionary;
             getDepthRange();
         std::uint64_t  getTimestampMS() const
         {
-		    return timestamp_ms*1000000;
+		    return timestamp_ms;
         }
     private:
         Camera();

@@ -17,7 +17,7 @@ public:
   bool readData(const std::string& address);
   void  writeData(const std::string& address, UA_Int32 data);
   void  writeData(const std::string& address, const std::string& data);
-  void  writeData(const std::string& address, UA_UInt64 data);
+  void  writeData(const std::string& address, UA_UInt32 data);
   void  writeData(const std::string& address, UA_Double data);
   void  writeData(const std::string& address, UA_Int16 data);
   void  dataProcessing(const std::string& json_data);

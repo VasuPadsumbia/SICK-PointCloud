@@ -1,4 +1,4 @@
-#include "Camera.h"
+﻿#include "Camera.h"
 #include <tuple>
 
 Camera& Camera::getInstance() {
@@ -229,6 +229,10 @@ void Camera::cleanup() {
 
 ExitCode Camera::processFrame(bool image_plot, bool point_cloud_plot, bool PCD, bool PLY, bool save_image, bool save_point_cloud) 
 {
+    uint64_t first_timestamp = 0;
+    std::time_t    timestamp_s = 0;
+    std::tm        tm{};
+    std::stringstream ss;
   auto start_time = std::chrono::high_resolution_clock::now();
     const std::chrono::milliseconds pollPeriodSpan{pollperiodMs};
     auto lastSnapTime = std::chrono::steady_clock::now();
@@ -269,6 +273,7 @@ ExitCode Camera::processFrame(bool image_plot, bool point_cloud_plot, bool PCD, 
       {
         writeFrame(visionaryType, *pDataHandler, "");
       }
+      
       // Convert data to a point cloud
       pDataHandler->generatePointCloud(point_cloud_ply);
       pDataHandler->transformPointCloud(point_cloud_ply);
@@ -277,11 +282,11 @@ ExitCode Camera::processFrame(bool image_plot, bool point_cloud_plot, bool PCD, 
     //auto end_time = std::chrono::high_resolution_clock::now();
     //std::chrono::duration<double> elapsed_seconds = end_time - start_time;
     //std::cout << "Point cloud process time: " << elapsed_seconds.count() << "s\n";
-    this->timestamp_ms = pDataHandler->getTimestampMS();
+    auto [timestamp_ms, offset]  = pDataHandler->getTimestampMS();
     //this->timestamp_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    std::time_t       timestamp_s  = timestamp_ms / 1000;
-    std::tm           tm           = *std::gmtime(&timestamp_s);
-    std::stringstream ss;
+	this->timestamp_ms = timestamp_ms + offset;
+    timestamp_s  = timestamp_ms / 1000;  
+    tm = *std::gmtime(&timestamp_s);
 	//std::cout << "Data Timestamp in Point cloud processing[ms] = " << timestamp_ms << "\n";
     ss << std::put_time(&tm, "%Y-%m-%d %H:%M:%S") << '.' << std::setw(3) << std::setfill('0') << (timestamp_ms % 1000);
     std::cout << "Data Timestamp [YYYY-MM-DD HH:MM:SS.mm] = " << ss.str() << "\n";

@@ -37,28 +37,24 @@ public:
           if (&camera != nullptr)
           {
 			auto time_start = std::chrono::high_resolution_clock::now();
-            std::cout << "Processing frame..." << std::endl;
+            //std::cout << "Processing frame..." << std::endl;
             camera.initializeStream();
             camera.processFrame(false, false, false, false, false, false);
             //std::cout << "Setting depth range..." << std::endl;
-            camera.setDepthRange(std::make_tuple(0.554, 0.569));
-            //camera.setDepthRange(std::make_tuple(0.5065, 0.512));
+            //camera.setDepthRange(std::make_tuple(0.554, 0.569));
+            camera.setDepthRange(std::make_tuple(0.527, 0.531));
             std::tie(contours, centroid, point_color) = camera.getContours(false, eps, min_samples);
             current_id = current_id + 1;
-            //std::cout << "Centroid: " << centroid << std::endl;
-            //std::cout << "Point color: " << point_color << std::endl;
-            //std::cout << "Contour size: " << contours.size() << std::endl;
-
             nlohmann::json json_obj;
             json_obj["x"] = centroid(0)*100;
             json_obj["y"] = centroid(1)*100;
             json_obj["z"] = centroid(2)*100;
             json_obj["color"] = 2;
             json_obj["id"] = current_id;
-			std::cout << "time elapsed: " << camera.getTimestampMS() - timestamp << std::endl;
+			std::cout << "time elapsed: " << (camera.getTimestampMS() - timestamp)/1000 << std::endl;
 			timestamp = camera.getTimestampMS();
             json_obj["timestamp"] = timestamp;// timestamp_value;
-            std::cout << "timestamp: " << timestamp << std::endl;
+            //std::cout << "timestamp: " << timestamp << std::endl;
 
             std::string json_data = json_obj.dump();
 			std::cout << "json_data: " << json_data << std::endl;
@@ -83,6 +79,8 @@ public:
           {
             std::cerr << "Camera instance is null." << std::endl;
           }
+          std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+
         }
       }
       catch (const std::exception& e)

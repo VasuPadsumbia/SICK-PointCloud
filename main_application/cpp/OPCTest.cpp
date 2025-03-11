@@ -32,7 +32,7 @@ int main(int argc, char* argv[])
   std::random_device               rd;
   std::mt19937                     gen(rd());
   std::uniform_real_distribution<> dis_x(500.0, 900.0);
-  std::uniform_real_distribution<> dis_y(200, 306.5);
+  std::uniform_real_distribution<> dis_y(-0.5,139.5);
   std::uniform_real_distribution<> dis_z(-47, -15);
   std::uniform_int_distribution<>  dis_color(1, 4);
   //std::uniform_int_distribution<>  dis_id(1, 1000);
@@ -60,7 +60,7 @@ int main(int argc, char* argv[])
         // Create values for the ST_Pos structure
         UA_Double x_pos = dis_x(gen);
         UA_Double y_pos  = dis_y(gen);
-        UA_Double z_pos = 3;
+        UA_Double z_pos = -15;
         UA_Int32  color = dis_color(gen);
         UA_Int16  id     = current_id;
   
@@ -68,7 +68,7 @@ int main(int argc, char* argv[])
         auto     now             = std::chrono::system_clock::now();
         auto     now_ns          = std::chrono::time_point_cast<std::chrono::milliseconds>(now);
         auto     epoch           = now_ns.time_since_epoch();
-        UA_UInt32 timestamp_lword = static_cast<uint32_t>(epoch.count());
+        UA_UInt64 timestamp_lword = static_cast<uint64_t>(epoch.count());
   
         std::cout << "timestamp: " << timestamp_lword << std::endl;
         //plc_data.TypeCheck(time_node_id);

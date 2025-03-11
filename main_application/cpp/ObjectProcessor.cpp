@@ -33,6 +33,7 @@ int main(int argc, char* argv[])
   //while (true) {
 	auto    init_start_time = std::chrono::high_resolution_clock::now();
 	//camera.setROI(215, 535, 151, 384);
+	//camera.setIntegrationTime(1250, 5000);
 	camera.initializeStream();
 	auto init_end_time = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double> init_elapsed_seconds = init_end_time - init_start_time;
@@ -81,10 +82,10 @@ int main(int argc, char* argv[])
 		  else
 		  {
 			  //camera.setDepthRange(std::make_tuple(0.533, 0.538));
-			  //camera.setDepthRange(std::make_tuple(0.5065, 0.512));
-			  camera.setDepthRange(std::make_tuple(0.554, 0.569));
+			  camera.setDepthRange(std::make_tuple(0.527, 0.531));
+			  //camera.setDepthRange(std::make_tuple(0.554, 0.569));
 		  }
-		  std::tie(contours, centroid, point_color) = camera.getContours(true, eps, min_samples);
+		  std::tie(contours, centroid, point_color) = camera.getContours(false, eps, min_samples);
 		  std::cout << "Centroid: " << centroid << std::endl;
 		  std::cout << "Point color: " << point_color << std::endl;
 		  std::cout << "Contour size: " << contours.size() << std::endl;

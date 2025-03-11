@@ -144,7 +144,7 @@ void PLCData::writeData(const std::string& address, const std::string& data)
   UA_NodeId_clear(&nodeId);
 }
 
-void PLCData::writeData(const std::string& address, UA_UInt32 data)
+void PLCData::writeData(const std::string& address, UA_UInt64 data)
 {
   if (!client_)
   {
@@ -156,7 +156,7 @@ void PLCData::writeData(const std::string& address, UA_UInt32 data)
   UA_Variant_init(&value);
   UA_NodeId nodeId = UA_NODEID_STRING_ALLOC(4, address.c_str());
 
-  UA_Variant_setScalar(&value, &data, &UA_TYPES[UA_TYPES_UINT32]);
+  UA_Variant_setScalar(&value, &data, &UA_TYPES[UA_TYPES_UINT64]);
 
   UA_StatusCode retval = UA_Client_writeValueAttribute(client_, nodeId, &value);
 
@@ -315,7 +315,7 @@ void PLCData::dataProcessing(const std::string& json_data)
     writeData(newpos_node_id + ".colour", color_value);
 
     // Write timestamp
-    UA_UInt32 timestamp_value = json_obj["timestamp"];
+    UA_UInt64 timestamp_value = json_obj["timestamp"];
     //std::cout << "UA Variant value: " << timestamp_value << std::endl;
     writeData(time_node_id, timestamp_value);
 

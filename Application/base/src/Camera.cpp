@@ -213,7 +213,17 @@ ExitCode Camera::initializeStream() {
         std::cout << "Setting color integration time to " << this->integration_time_color << "micro seconds.\n"; 
         this->setup_updated = false;
     }
-   
+    // Read changed integration time values (after auto exposure was triggered)
+    CoLaCommand getIntegrationTimeUsCommand = CoLaParameterWriter(CoLaCommandType::READ_VARIABLE, "integrationTimeUs").build();
+    CoLaCommand getIntegrationTimeUsResponse = device_control->sendCommand(getIntegrationTimeUsCommand);
+    std::printf("Read integrationTimeUs = %d\n", CoLaParameterReader(getIntegrationTimeUsResponse).readUDInt());
+
+    CoLaCommand getIntegrationTimeUsColorCommand =
+        CoLaParameterWriter(CoLaCommandType::READ_VARIABLE, "integrationTimeUsColor").build();
+    CoLaCommand getIntegrationTimeUsColorResponse = device_control->sendCommand(getIntegrationTimeUsColorCommand);
+    std::printf("Read integrationTimeUsColor = %d\n", CoLaParameterReader(getIntegrationTimeUsColorResponse).readUDInt());
+
+
     setTransportProtocol(device_control, "TCP"); // TCP
     setBlobTcpPort(device_control, stream_port);
     device_control->logout();
@@ -233,7 +243,7 @@ ExitCode Camera::processFrame(bool image_plot, bool point_cloud_plot, bool PCD, 
     std::time_t    timestamp_s = 0;
     std::tm        tm{};
     std::stringstream ss;
-  auto start_time = std::chrono::high_resolution_clock::now();
+    auto start_time = std::chrono::high_resolution_clock::now();
     const std::chrono::milliseconds pollPeriodSpan{pollperiodMs};
     auto lastSnapTime = std::chrono::steady_clock::now();
     pFrameGrabber    = device_control->createFrameGrabber();

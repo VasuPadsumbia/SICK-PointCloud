@@ -1,4 +1,4 @@
-#include <application_base_modules/Camera.h>
+//#include <application_base_modules/Camera.h>
 #include <application_base_modules/PLCData.h>
 #include <boost/interprocess/ipc/message_queue.hpp>
 #include <future>

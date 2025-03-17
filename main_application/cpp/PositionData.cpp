@@ -3,7 +3,7 @@
 #include <future>
 #include <iostream>
 #include <nlohmann/json.hpp>
-#include <application_base_modules/PLCData.h>
+//#include <application_base_modules/PLCData.h>
 
 namespace bip = boost::interprocess;
 std::stringstream ss;
@@ -79,7 +79,7 @@ public:
           {
             std::cerr << "Camera instance is null." << std::endl;
           }
-          std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+          //std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
         }
       }
@@ -90,6 +90,33 @@ public:
       }
     }
     std::cout << "PositionData worker stopped." << std::endl;
+  }
+
+  int getColor(Eigen::Vector3d pointcolor)
+  {
+	  int r = static_cast<int>(pointcolor(0));
+	  int g = static_cast<int>(pointcolor(1));
+	  int b = static_cast<int>(pointcolor(2));
+	  if (r > 100 && g < 100 && b < 100)
+	  {
+		  return 1; // RED
+	  }
+	  else if (r < 100 && g > 100 && b < 100)
+	  {
+		  return 2; // GREEN
+	  }
+	  else if (r < 100 && g < 100 && b > 100)
+	  {
+		  return 3; // BLUE
+	  }
+	  else if (r > 100 && g > 100 && b < 100)
+	  {
+		  return 4; // YELLOW
+	  }
+      else
+	  {
+		  return 0; // UNKNOWN
+	  }
   }
 
   void stopWorker()

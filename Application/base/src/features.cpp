@@ -51,7 +51,7 @@ std::tuple<pcl::PointCloud<pcl::PointXYZ>,
     }
   }
 
-  std::cout << "Filtered points count: " << filtered_points.size() << std::endl;
+  std::cout << "Filtered points count: " << filtered_points.size() << "\n";
   return std::make_tuple(filtered_points, filtered_colors);
 }
 
@@ -73,18 +73,36 @@ std::tuple<pcl::PointCloud<pcl::PointXYZ>,
 {
   if (points.empty())
   {
-    std::cout << "No points to find contour." << std::endl;
+    std::cout << "No points to find contour." << "\n";
     return std::make_tuple(pcl::PointCloud<pcl::PointXYZ>(), Eigen::Vector3d::Zero());
   }
 
+  // Extract the ROI boundaries
+  float min_x, max_x, min_y, max_y;
+  std::tie(min_x, max_x, min_y, max_y) = std::make_tuple(-0.15, 0.15, -0.04, 0.04);
+
+  pcl::PointCloud<pcl::PointXYZ> roi_points;
+  for (const auto& p : points)
+  {
+	  if (p.x >= min_x && p.x <= max_x && p.y >= min_y && p.y <= max_y)
+	  {
+		  roi_points.push_back(p);
+	  }
+  }
+
+  if (roi_points.empty())
+  {
+      std::cout << "No points in the ROI." << "\n";
+	  return std::make_tuple(pcl::PointCloud<pcl::PointXYZ>(), Eigen::Vector3d::Zero());
+  }
   pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>);
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_xyz(new pcl::PointCloud<pcl::PointXYZ>);
   pcl::VoxelGrid<pcl::PointXYZ>       sor;
-  sor.setInputCloud(points.makeShared());
+  sor.setInputCloud(roi_points.makeShared());
   sor.setLeafSize(0.005f, 0.005f, 0.005f); // Adjust the leaf size as needed
   sor.filter(*cloud_xyz);
 
-  std::cout << "Downsampled points count: " << cloud_xyz->size() << std::endl;
+  std::cout << "Downsampled points count: " << cloud_xyz->size() << "\n";
 
   tree->setInputCloud(cloud_xyz);
 
@@ -98,7 +116,7 @@ std::tuple<pcl::PointCloud<pcl::PointXYZ>,
   //std::cout << "eps: " << eps << ", min_samples: " << min_samples << std::endl;
   if (cluster_indices.empty())
   {
-    std::cout << "No valid clusters found." << std::endl;
+    std::cout << "No valid clusters found." << "\n";
     return std::make_tuple(pcl::PointCloud<pcl::PointXYZ>(), Eigen::Vector3d::Zero());
   }
 
@@ -199,9 +217,9 @@ void PointCloudProcessor::visualizePointCloudWithContour(const pcl::PointCloud<p
     point.x = points[i].x;
     point.y = points[i].y;
     point.z = points[i].z;
-    point.r = static_cast<uint8_t>(colors[i].x() * 255);
-    point.g = static_cast<uint8_t>(colors[i].y() * 255);
-    point.b = static_cast<uint8_t>(colors[i].z() * 255);
+    point.r = static_cast<uint8_t>(colors[i].x());
+    point.g = static_cast<uint8_t>(colors[i].y());
+    point.b = static_cast<uint8_t>(colors[i].z());
     cloud->points.push_back(point);
   }
 
@@ -234,6 +252,12 @@ void PointCloudProcessor::visualizePointCloudWithContour(const pcl::PointCloud<p
 
   pcl::PointXYZ centroid_point(centroid.x(), centroid.y(), centroid.z());
   viewer->addSphere(centroid_point, 0.005, 1.0, 0.0, 0.0, "centroid");
+  Eigen::Vector3d point_colors = this->getColor(centroid);
+  // Display centroid coordinates and color as text on the visualization
+  std::stringstream centroid_text;
+  centroid_text << "Centroid: (" << centroid.x()*100 << ", " << centroid.y()*100 << ", " << centroid.z()*100 << ")";
+  centroid_text << "\nColor: (" << point_colors(0) << ", " << point_colors(1) << ", " << point_colors(2) << ") "; // Red color for the centroid
+  viewer->addText3D(centroid_text.str(), centroid_point, 0.02, 1.0, 1.0, 1.0, "centroid_text");
 
   viewer->spin();
 }

@@ -11,6 +11,9 @@ project(Object_Processor
         DESCRIPTION "Object points computation of the visionary programming API"
         LANGUAGES CXX C)
 
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTOUIC ON)
 ### COMPILER FLAGS ###
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
@@ -30,6 +33,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 #find_package(VTK REQUIRED)
 #find_package(PCL REQUIRED)
 #find_package(OpenCV REQUIRED)
+find_package(Qt5 COMPONENTS Widgets REQUIRED)
 
 # root folder and name of the application_base_modules module
 set(APPLICATION_BASE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../Application/base)
@@ -40,12 +44,10 @@ if (NOT TARGET ${APPLICATION_BASE_NAME})
   add_subdirectory(${APPLICATION_BASE_PATH} ${CMAKE_CURRENT_BINARY_DIR}/Application)
 endif()
 
-add_executable(ObjectProcessor
-ObjectProcessor.cpp)
-add_executable(OPCTest
-OPCTest.cpp)
+add_executable(ObjectProcessor ObjectProcessor.cpp)
+add_executable(OPCTest OPCTest.cpp)
 add_executable(comm_worker Communication.cpp)
-add_executable(pos_worker PositionData.cpp)
+add_executable(pos_worker PositionData.cpp )
 add_executable(main_app app.cpp )
 
 #add_custom_command(TARGET main_app pos_worker comm_worker ObjectProcessor OPCTest POST_BUILD
@@ -69,19 +71,19 @@ add_executable(main_app app.cpp )
 #endforeach()
 
 target_include_directories(ObjectProcessor
-  PRIVATE )#${PCL_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
+  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})#${PCL_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
 
 target_include_directories(OPCTest
-  PRIVATE )#${PCL_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
+  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} )#${PCL_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
 
 target_include_directories(comm_worker
-  PRIVATE )#${PCL_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
+  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})#${PCL_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
 
 target_include_directories(pos_worker
-  PRIVATE )#${PCL_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
+  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})#${PCL_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
 
 target_include_directories(main_app
-  PRIVATE)# ${PCL_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
+  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})# ${PCL_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
 
 target_link_libraries(ObjectProcessor
   ${APPLICATION_BASE_NAME}
@@ -104,11 +106,13 @@ target_link_libraries(OPCTest
 target_link_libraries(comm_worker
     ${APPLICATION_BASE_NAME}
     spng_miniz
+    Qt5::Widgets
 )
 
 target_link_libraries(pos_worker 
     ${APPLICATION_BASE_NAME}
     spng_miniz
+    Qt5::Widgets
 )
 target_link_libraries(main_app
   ${APPLICATION_BASE_NAME}

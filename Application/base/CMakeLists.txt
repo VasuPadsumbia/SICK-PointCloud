@@ -9,6 +9,10 @@ project(application_base_modules
 ### Options
 option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
 
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTOUIC ON)
+
 ### Configuration
 if(WIN32)
   set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON) # If building as shared lib on Windows
@@ -76,6 +80,7 @@ find_package(PCL CONFIG REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(open62541 CONFIG REQUIRED)
 find_package(Boost REQUIRED COMPONENTS process)
+find_package(Qt5 COMPONENTS Widgets REQUIRED)
 
 #find_package(uasdk)
 # Add the following lines to find VTK and include its directories
@@ -110,6 +115,7 @@ link_directories(${CAMERA_MODULE_LINK_LIBRARIES}
     sick_visionary_cpp_base::sick_visionary_cpp_base
     shared_cpp_utils
     Boost::process
+    Qt5::Widgets
     ${OpenCV_LIBS} 
     ${PCL_LIBRARIES_DIRS} 
     ${Eigen_LIBS}
@@ -141,6 +147,7 @@ set(CAMERA_MODULE_PUBLIC_HEADERS
   include/application_base_modules/features.h
   include/application_base_modules/Visualizer.h
   include/application_base_modules/PLCData.h
+  include/application_base_modules/CustomStreamBuffer.h
 )
 
 target_sources(${TARGET_NAME}
@@ -172,6 +179,7 @@ target_link_libraries(
     open62541::open62541
     shared_cpp_utils
     Boost::process
+    Qt5::Widgets
     ${OpenCV_LIBS} 
     ${PCL_LIBRARY} 
     ${Eigen_LIBS}

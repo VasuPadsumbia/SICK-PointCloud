@@ -298,8 +298,8 @@ ExitCode Camera::processFrame(bool image_plot, bool point_cloud_plot, bool PCD, 
     timestamp_s  = this->timestamp_ms / 1000;
     tm = *std::gmtime(&timestamp_s);
 	//std::cout << "Data Timestamp in Point cloud processing[ms] = " << timestamp_ms << "\n";
-    ss << std::put_time(&tm, "%Y-%m-%d %H:%M:%S") << '.' << std::setw(3) << std::setfill('0') << (this->timestamp_ms % 1000);
-    std::cout << "Data Timestamp [YYYY-MM-DD HH:MM:SS.mm] = " << ss.str() << "\n";
+    //ss << std::put_time(&tm, "%Y-%m-%d %H:%M:%S") << '.' << std::setw(3) << std::setfill('0') << (this->timestamp_ms % 1000);
+    //std::cout << "Data Timestamp [YYYY-MM-DD HH:MM:SS.mm] = " << ss.str() << "\n";
     timestamp = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
     if (image_plot)
     {

@@ -9,6 +9,7 @@
 #include <QDialog>
 #include <QDoubleSpinBox>
 #include <QPlainTextEdit>
+#include <QCheckBox>
 #include <QTextCursor>
 #include <QFont>
 #include <QMessageBox>
@@ -32,22 +33,22 @@ class ObjectProcessor : public QThread
 {
     Q_OBJECT
 public:
-    explicit ObjectProcessor(QObject* parent = nullptr)
-        : QThread(parent),
-        camera(Camera::getInstance()),
-        stop_event(false),
-        eps(0.05),
-        min_samples(15),
-        delay(800),
-        min_depth(0.530),
-        max_depth(0.536),
-        integration_time(1250),
-        integration_time_color(6000),
-        frames_to_average(50),
-        dataProcessor(50)
-    {
-        future_obj = exit_signal.get_future();
-    }
+    explicit ObjectProcessor(QObject* parent)
+    : QThread(parent),
+      camera(Camera::getInstance()),
+      stop_event(false),
+      eps(0.05),
+      min_samples(15),
+      delay(800),
+      min_depth(0.530),
+      max_depth(0.536),
+      integration_time(1250),
+      integration_time_color(6000),
+      frames_to_average(50),
+      dataProcessor(50)
+{
+    future_obj = exit_signal.get_future();
+}
 
     ~ObjectProcessor()
     {
@@ -78,6 +79,10 @@ public:
         }
     }
 
+    Camera& getCamera()
+    {
+        return camera;
+    }
     double getEps() const { return eps; }
     void setEps(double value) { eps = value; }
 
@@ -108,7 +113,7 @@ public:
 
 signals:
     void updateConsole(QString message);
-    void updateMeanCentroid(QString meanX, QString meanY, QString meanZ);
+    void updateMeanCentroid(QString meanX, QString meanY, QString meanZ, QString stdDevX, QString stdDevY, QString stdDevZ);
 
 protected:
     void run() override
@@ -137,25 +142,30 @@ private:
                 QString timestamp = getTimestamp();
                 QString colorName = colorToString(getColor(point_color));
 
-                QString message = QString("Centroid: (%.3f, %.3f, %.3f) | Color: %1 | Time: %2 ms | Timestamp: %3")
-                    .arg(centroid(0)).arg(centroid(1)).arg(centroid(2))
+                QString message = QString("Centroid: (%1, %2, %3) | Color: %4 | Time: %5 ms | Timestamp: %6")
+                    .arg(centroid(0)*100, 0, 'f', 3)
+                    .arg(centroid(1)*100, 0, 'f', 3)
+                    .arg(centroid(2)*100, 0, 'f', 3)
                     .arg(colorName)
-                    .arg(time_taken_ms, 0, 'f', 1)
+                    .arg(time_taken_ms/1000, 0, 'f', 4)
                     .arg(timestamp);
+
 
                 emit updateConsole(message);
 
-                dataProcessor.addCentroid(centroid);
+                dataProcessor.addCentroid(centroid*100);
 
                 Eigen::Vector3d mean = dataProcessor.getMean();
-                if (mean.norm() > 0)
-                {
-                    emit updateMeanCentroid(
-                        QString::number(mean(0), 'f', 3),
-                        QString::number(mean(1), 'f', 3),
-                        QString::number(mean(2), 'f', 3)
-                    );
-                }
+                Eigen::Vector3d stddev = dataProcessor.getStdDev();
+
+                emit updateMeanCentroid(
+                    QString::number(mean(0), 'f', 3),
+                    QString::number(mean(1), 'f', 3),
+                    QString::number(mean(2), 'f', 3),
+                    QString::number(stddev(0), 'f', 3),
+                    QString::number(stddev(1), 'f', 3),
+                    QString::number(stddev(2), 'f', 3)
+                );
             }
             else
             {
@@ -220,6 +230,59 @@ private:
     int frames_to_average;
 
     DataProcessor dataProcessor;
+};
+
+class ProcessFrameDialog : public QDialog
+{
+    Q_OBJECT
+
+public:
+    ProcessFrameDialog(ObjectProcessor* processor, QWidget* parent = nullptr)
+        : QDialog(parent), processor(processor)  
+    {
+        QVBoxLayout* layout = new QVBoxLayout(this);
+
+        imagePlotCheckBox = new QCheckBox("Image Plot", this);
+        pointCloudPlotCheckBox = new QCheckBox("Point Cloud Plot", this);
+        PCDCheckBox = new QCheckBox("PCD", this);
+        PLYCheckBox = new QCheckBox("PLY", this);
+        saveImageCheckBox = new QCheckBox("Save Image", this);
+        savePointCloudCheckBox = new QCheckBox("Save Point Cloud", this);
+
+        QPushButton* processButton = new QPushButton("Process Frame", this);
+
+        layout->addWidget(imagePlotCheckBox);
+        layout->addWidget(pointCloudPlotCheckBox);
+        layout->addWidget(PCDCheckBox);
+        layout->addWidget(PLYCheckBox);
+        layout->addWidget(saveImageCheckBox);
+        layout->addWidget(savePointCloudCheckBox);
+        layout->addWidget(processButton);
+
+        connect(processButton, &QPushButton::clicked, this, &ProcessFrameDialog::Frame);
+    }
+
+private slots:
+    void Frame()
+    {
+        bool imagePlot = imagePlotCheckBox->isChecked();
+        bool pointCloudPlot = pointCloudPlotCheckBox->isChecked();
+        bool PCD = PCDCheckBox->isChecked();
+        bool PLY = PLYCheckBox->isChecked();
+        bool saveImage = saveImageCheckBox->isChecked();
+        bool savePointCloud = savePointCloudCheckBox->isChecked();
+        processor->getCamera().initializeStream();
+        processor->getCamera().processFrame(imagePlot, pointCloudPlot, PCD, PLY, saveImage, savePointCloud);
+    }
+
+private:
+	ObjectProcessor* processor;
+    QCheckBox* imagePlotCheckBox;
+    QCheckBox* pointCloudPlotCheckBox;
+    QCheckBox* PCDCheckBox;
+    QCheckBox* PLYCheckBox;
+    QCheckBox* saveImageCheckBox;
+    QCheckBox* savePointCloudCheckBox;
 };
 
 
@@ -318,7 +381,6 @@ private:
     QDoubleSpinBox* maxDepthSpin;
 };
 
-
 class MainWindow : public QWidget
 {
     Q_OBJECT
@@ -335,6 +397,7 @@ public:
         startButton = new QPushButton("Start Worker", this);
         stopButton = new QPushButton("Stop Worker", this);
         settingsButton = new QPushButton("Settings", this);
+        processFrameButton = new QPushButton("Process Frame", this);
 
         QLabel* avgLabel = new QLabel("Average Centroid:", this);
         meanXLabel = new QLabel("X: 0.000", this);
@@ -353,19 +416,18 @@ public:
 
         consoleOutput = new QPlainTextEdit(this);
         consoleOutput->setReadOnly(true);
-        consoleOutput->setMaximumBlockCount(1);
+        consoleOutput->setMaximumBlockCount(1); // Single line console output
         consoleOutput->setStyleSheet("background-color: black; color: white;");
         consoleOutput->setFont(QFont("Courier", 14));
 
         layout->addWidget(startButton);
         layout->addWidget(stopButton);
         layout->addWidget(settingsButton);
-
+        layout->addWidget(processFrameButton);
         layout->addWidget(avgLabel);
         layout->addWidget(meanXLabel);
         layout->addWidget(meanYLabel);
         layout->addWidget(meanZLabel);
-
         layout->addWidget(delayLabel);
         layout->addWidget(delaySpinBox);
         layout->addWidget(framesToAverageLabel);
@@ -375,6 +437,7 @@ public:
         connect(startButton, &QPushButton::clicked, processor, &ObjectProcessor::startWorker);
         connect(stopButton, &QPushButton::clicked, processor, &ObjectProcessor::stopWorker);
         connect(settingsButton, &QPushButton::clicked, this, &MainWindow::openSettings);
+        connect(processFrameButton, &QPushButton::clicked, this, &MainWindow::openProcessFrameDialog);
         connect(delaySpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &MainWindow::onDelayChanged);
         connect(framesToAverageSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &MainWindow::onFramesToAverageChanged);
         connect(processor, &ObjectProcessor::updateConsole, this, &MainWindow::updateConsole);
@@ -384,14 +447,14 @@ public:
 private slots:
     void updateConsole(const QString& message)
     {
-        consoleOutput->setPlainText(message); // Overwrite console
+        consoleOutput->setPlainText(message);
     }
 
-    void updateMeanCentroid(QString meanX, QString meanY, QString meanZ)
+    void updateMeanCentroid(QString meanX, QString meanY, QString meanZ, QString stdDevX, QString stdDevY, QString stdDevZ)
     {
-        meanXLabel->setText("X: " + meanX);
-        meanYLabel->setText("Y: " + meanY);
-        meanZLabel->setText("Z: " + meanZ);
+        meanXLabel->setText("X: " + meanX + " | StdDev X: " + stdDevX);
+        meanYLabel->setText("Y: " + meanY + " | StdDev Y: " + stdDevY);
+        meanZLabel->setText("Z: " + meanZ + " | StdDev Z: " + stdDevZ);
     }
 
     void openSettings()
@@ -401,8 +464,13 @@ private slots:
             QMessageBox::warning(this, "Running", "Stop the worker before changing settings.");
             return;
         }
-
         SettingsDialog dialog(processor, this);
+        dialog.exec();
+    }
+
+    void openProcessFrameDialog()
+    {
+        ProcessFrameDialog dialog(processor, this);
         dialog.exec();
     }
 
@@ -421,12 +489,12 @@ private:
     QPushButton* startButton;
     QPushButton* stopButton;
     QPushButton* settingsButton;
+    QPushButton* processFrameButton;
     QLabel* delayLabel;
     QSpinBox* delaySpinBox;
     QLabel* framesToAverageLabel;
     QSpinBox* framesToAverageSpinBox;
     QPlainTextEdit* consoleOutput;
-
     QLabel* meanXLabel;
     QLabel* meanYLabel;
     QLabel* meanZLabel;

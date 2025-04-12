@@ -49,7 +49,7 @@ add_executable(OPCTest OPCTest.cpp)
 add_executable(comm_worker Communication.cpp)
 add_executable(pos_worker PositionData.cpp )
 add_executable(main_app app.cpp )
-
+add_executable(ObjectTest ObjectTest.cpp )
 #add_custom_command(TARGET main_app pos_worker comm_worker ObjectProcessor OPCTest POST_BUILD
 #  COMMAND ${CMAKE_COMMAND} -E rm -f ${CMAKE_BINARY_DIR}/main_application/cpp/*.dll
 #)
@@ -85,6 +85,9 @@ target_include_directories(pos_worker
 target_include_directories(main_app
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})# ${PCL_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
 
+ target_include_directories(ObjectTest
+  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})# ${PCL_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
+
 target_link_libraries(ObjectProcessor
   ${APPLICATION_BASE_NAME}
   spng_miniz
@@ -114,6 +117,13 @@ target_link_libraries(pos_worker
     spng_miniz
     Qt5::Widgets
 )
+
+target_link_libraries(ObjectTest 
+    ${APPLICATION_BASE_NAME}
+    spng_miniz
+    Qt5::Widgets
+)
+
 target_link_libraries(main_app
   ${APPLICATION_BASE_NAME}
   spng_miniz

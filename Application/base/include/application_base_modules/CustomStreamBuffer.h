@@ -1,39 +1,49 @@
-#ifndef CUSTOMSTREAMBUFFER_H
-#define CUSTOMSTREAMBUFFER_H
-
 #include <streambuf>
-#include <QTextEdit>
+#include <QPlainTextEdit>
 
-class CustomStreamBuffer : public std::streambuf
+class LiveConsoleStream : public std::streambuf
 {
 public:
-    CustomStreamBuffer(QTextEdit* textEdit)
-        : textEdit(textEdit)
-    {
-    }
+    LiveConsoleStream(QPlainTextEdit* console) : console(console) {}
 
 protected:
-    virtual int_type overflow(int_type v) override
+    int_type overflow(int_type v) override
     {
-        if (v == '\n')
+        if (v != EOF)
         {
-            textEdit->append("");
-        }
-        else
-        {
-            textEdit->insertPlainText(QString(v));
+            buffer += static_cast<char>(v);
+            if (v == '\n')
+            {
+                updateConsole();
+                buffer.clear();
+            }
         }
         return v;
     }
 
-    virtual std::streamsize xsputn(const char* p, std::streamsize n) override
+    std::streamsize xsputn(const char* p, std::streamsize n) override
     {
-        textEdit->insertPlainText(QString::fromUtf8(p, n));
+        for (std::streamsize i = 0; i < n; ++i)
+        {
+            overflow(p[i]);
+        }
         return n;
     }
 
 private:
-    QTextEdit* textEdit;
-};
+    void updateConsole()
+    {
+        QString text = QString::fromStdString(buffer).trimmed();
 
-#endif // CUSTOMSTREAMBUFFER_H
+        // Replace last line
+        QTextCursor cursor = console->textCursor();
+        cursor.movePosition(QTextCursor::End);
+        cursor.select(QTextCursor::LineUnderCursor);
+        cursor.removeSelectedText();
+        cursor.insertText(text);
+        console->setTextCursor(cursor);
+    }
+
+    QPlainTextEdit* console;
+    std::string buffer;
+};

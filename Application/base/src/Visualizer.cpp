@@ -88,8 +88,17 @@ void Visualizer::visualizePointCloud()
     coefficients->values[2] = 0.0; // c
     coefficients->values[3] = 0.0; // d
     viewer->addPlane(*coefficients, "xy_plane");
+    while (!viewer->wasStopped())
+    {
+        viewer->spinOnce(100);  // Spin once every 100ms
 
-    viewer->spin();
+        int key = cv::waitKey(1);  // Listen for keyboard input
+        if (key == 'q' || key == 'Q')
+        {
+            viewer->close();  // Close the viewer
+            break;
+        }
+    }
 }
 
 void Visualizer::plotFrameRealTime(const VisionaryData& data)
@@ -121,7 +130,15 @@ void Visualizer::plotFrameRealTime(const VisionaryData& data)
   cv::imshow("RGBA Map", rgba_display);
   cv::imshow("Z-Map", zmap_display);
   cv::imshow("State Map", state_display);
-  cv::waitKey(0);
+  while (true)
+  {
+      int key = cv::waitKey(10);  // wait 10 ms
+      if (key == 'q' || key == 'Q')
+      {
+          cv::destroyAllWindows();
+          break;
+      }
+  }
 }
 
 void Visualizer::setPointCloudColor(

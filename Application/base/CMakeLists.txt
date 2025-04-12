@@ -139,7 +139,8 @@ set (CAMERA_MODULE_SRCS
   src/Camera.cpp
   src/features.cpp
   src/Visualizer.cpp
- src/PLCData.cpp
+  src/PLCData.cpp
+  src/DataProcessor.cpp
 )
 
 set(CAMERA_MODULE_PUBLIC_HEADERS
@@ -148,6 +149,7 @@ set(CAMERA_MODULE_PUBLIC_HEADERS
   include/application_base_modules/Visualizer.h
   include/application_base_modules/PLCData.h
   include/application_base_modules/CustomStreamBuffer.h
+  include/application_base_modules/DataProcessor.h
 )
 
 target_sources(${TARGET_NAME}

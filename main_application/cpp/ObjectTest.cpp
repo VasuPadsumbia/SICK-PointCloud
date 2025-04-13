@@ -142,7 +142,7 @@ private:
                 QString timestamp = getTimestamp();
                 QString colorName = colorToString(getColor(point_color));
 
-                QString message = QString("Centroid: (%1, %2, %3) | Color: %4 | Time: %5 ms | Timestamp: %6")
+                QString message = QString("Centroid: (%1, %2, %3) | Color: %4 | TimeElapsed: %5 s | Timestamp: %6")
                     .arg(centroid(0)*100, 0, 'f', 3)
                     .arg(centroid(1)*100, 0, 'f', 3)
                     .arg(centroid(2)*100, 0, 'f', 3)

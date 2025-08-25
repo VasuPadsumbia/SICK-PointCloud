@@ -1,168 +1,143 @@
-= SICK Visionary samples
-:toclevels: 4
-:source-highlighter: rouge
-:icons: font
+= SICK PointCloud – Extended Visionary Samples
 :toc:
+:toclevels: 3
+:icons: font
 
 == Overview
 
-This repository contains programming samples for Sick Visionary-T Mini CX (pass:[V3S105-1AAAAAA]) and Sick Visionary-S CX (pass:[V3S102-1AAAAAA] and pass:[V3S102<area>-1AABAAB]).
+This repository provides programming samples and **custom applications** for working with **SICK Visionary cameras** (Visionary-T Mini CX and Visionary-S CX).
 
-The entry point for our camera programming samples is the link:visionary_welcome/python/welcome.py[Python Welcome Demo] and the link:visionary_welcome/cpp/welcome.cpp[Cpp Welcome Demo]. These welcome demos provide an overview to the functionalities offered by the Visionary Python and C++ API. They cover aspects such as device connection, user authentication (login and logout), parameter adjustments, along with the streaming and storage of images and point clouds.
+It is based on and extends the official SICK reference repository:
 
-For new users we recommended to follow the samples in the following order:
+- https://github.com/SICKAG/sick_visionary_samples.git
 
-. link:finding_and_connecting_devices/readme.adoc[Finding and connecting devices]
-. link:userlevels_and_passwords/readme.adoc[Userlevels and passwords]
-. link:diagnosing_devices/readme.adoc[Diagnosing devices]
-. link:image_frontend_configuration/readme.adoc[Image frontend configuration]
-. link:image_streaming_and_storing/readme.adoc[Streaming and storing]
-. link:/TODO[Time synchronization]
+The original examples (device discovery, login, configuration, streaming, storage) are preserved.  
+On top of those, this repo introduces:
+
+* `Application/` – custom libraries (reusable modules)  
+* `main_application/` – main program components with Qt5 UIs and inter-process communication  
+
+[IMPORTANT]
+====
+This project is **custom developed and tested for Windows only**.  
+Ubuntu/Linux builds are **untested**. Users may attempt a port with small CMake/network tweaks, but no official support is provided.
+====
+
+== Supported Devices
+
+* Visionary-T Mini CX (V3S105-1AAAAAA, FW ≥ 2.1.0, 3.0.0)  
+* Visionary-S CX (V3S102-1AAAAAA / V3S102-1AABAAB, FW ≥ 6.0.0, 6.5.0)  
+
+== Tested Environment
+
+* Windows 10/11  
+* Visual Studio 2022 (MSVC 19.x)  
+* CMake ≥ 3.24  
+* vcpkg (dependency management)  
+* Python 3.x with pip (for Python samples)  
+* Visionary-S
+
+== External Libraries Used
+
+The project relies on the following libraries:
+
+* **OpenCV** – image capture and processing  
+* **PCL (Point Cloud Library)** – 3D point cloud filtering and computation  
+* **Eigen3** – linear algebra and transformations  
+* **open62541** – OPC UA communication with CODESYS PLCs  
+* **Boost.Process** – managing and spawning processes  
+* **Qt5 Widgets** – graphical user interface for both processes  
+* **VTK** – 3D visualization of filtered objects  
+
+These are installed easily via **vcpkg** on Windows:
+
+[source,powershell]
+----
+vcpkg install opencv[core,ffmpeg]:x64-windows
+vcpkg install pcl:x64-windows
+vcpkg install eigen3:x64-windows
+vcpkg install open62541:x64-windows
+vcpkg install boost-process:x64-windows
+vcpkg install qt5:x64-windows
+vcpkg install vtk:x64-windows
+----
+
+== Python Dependencies (for samples only)
+
+[source,powershell]
+----
+pip install opencv-python numpy pycryptodomex
+----
+
+== Custom Application (Windows Only)
+
+The custom application integrates **Visionary camera data** with an external **PLC** using OPC UA, while providing **Qt5-based UIs** for real-time control and monitoring. The purpose was to obtain the position of the object feed over the conveyor and send it to the PLC for a pick and place application.
+
+* **Communication.cpp**  
+  - Manages the **OPC UA connection** with a CODESYS PLC. Application name `comm_worker`.
+  - User specifies PLC **IP address** and **OPC UA paths**.  
+  - Qt5 UI displays connection state and configuration options.  
+
+* **PositionData.cpp**  
+  - Captures frames from the Visionary camera. Application name `pos_worker`  
+  - Performs **object filtering**, **position computation**, and **timestamp processing**.  
+  - Qt5 UI allows the user to **fine-tune filtering parameters** for the field of view.  
+
+* **app.cpp**  
+  - Acts as the **main entry point**. Application name `main_app`.  
+  - Starts both `Communication` and `PositionData` processes concurrently.  
+  - Uses **inter-process communication (IPC)** to coordinate tasks.  
+
+=== Workflow
+
+1. Launch `main_app`.  
+2. Two processes start in parallel:  
+   * **Communication** handles PLC connection via OPC UA.  
+   * **PositionData** handles camera capture and filtering.  
+3. User adjusts **filter parameters** in the PositionData UI.  
+4. User sets **PLC IP and OPC UA pathways** in the Communication UI.  
+5. Application sends **object position data** with timestamps to the PLC.  
+
+Pipeline:  
+`Visionary Camera → PositionData (filter + compute) → IPC → Communication (OPC UA) → PLC`
+
+== Build (Windows)
+
+**Preferably use Visual Studio**. However, the following are commands for PowerShell.
+
+[source,powershell]
+----
+git clone https://github.com/VasuPadsumbia/SICK-PointCloud.git
+cd SICK-PointCloud
+git submodule update --init --recursive
+
+cmake -B build -DCMAKE_TOOLCHAIN_FILE=C:/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake
+cmake --build build --config Release
+----
+
+== Run
+
+* **C++ Welcome demo** (from original samples):
+
+[source,powershell]
+----
+.\build\Release\welcome.exe -i 192.168.1.10 -d Visionary-S
+----
+
+* **Custom application** (from `main_application/`):  
+  Run the executable built from `app.cpp` to start both processes.  
+  - Use **Communication UI** → connect to desired PLC (IP + OPC UA path).  
+  - Use **PositionData UI** → filter objects and adjust parameters interactively.  
+
+== References
+
+This repository is inspired by and extends the official SICK reference code:  
+
+- https://github.com/SICKAG/sick_visionary_samples.git
 
 == License
 
-The source code is released under link:./LICENSE[The Unlicense].
+The original `sick_visionary_samples` is released under *The Unlicense*.  
+Unless otherwise noted, this repository follows the same licensing terms.
 
-== Supported environments
-
-The samples in this repository have been tested with the following platforms:
-
-[cols="1,1,1,1", options="header"]
-|===
-| **Platform**
-| **Compiler**
-| **Version**
-| **Notes**
-
-| Windows
-| Visual Studio / Build Tools
-| 2022 (MSVC = 19.3x)
-|
-
-| Windows
-| gcc (mingw64)
-| 14.2.0 (>= 11.1)
-|
-
-| Linux inside WSL2
-| gcc
-| 11.4.0 (>= 11.1)
-| finding_and_connecting_devices (AutoIP) and image_streaming_and_storing (UDP) will not work with default WSL2 configuration (NAT)
-
-|===
-
-
-== Supported Hardware
-
-[cols="1,1,1,1", options="header"]
-|===
-| **device name**
-| **part no.**
-| **description**
-| **firmware version**
-
-| Visionary-T Mini CX (pass:[V3S105-1AAAAAA])
-| link:https://www.sick.com/de/en/catalog/products/machine-vision-and-identification/machine-vision/visionary-t-mini/v3s105-1aaaaaa/p/p665983[1112649]
-| 3D time-of-flight camera
-| 2.1.0 & ✔ 3.0.0
-
-| Visionary-S CX (pass:[V3S102-1AAAAAA], pass:[V3S102<area>-1AABAAB])
-| link:https://www.sick.com/de/en/catalog/products/machine-vision-and-identification/machine-vision/visionary-s/v3s102-1aaaaaa/p/p602149[1090184] link:https://www.sick.com/de/en/catalog/products/machine-vision-and-identification/machine-vision/visionary-s/v3s102-1aabaab/p/p651629[1090185]
-| 3D structured light stereovision camera with RGB data
-| 6.0.0 & ✔ 6.5.0
-|===
-
-
-== Getting started
-
-Ensure you have a recent version of https://cmake.org/install/[cmake] footnote:[minimum required version >= 3.24]
-and a compiler available on your machine's system.
-If you are working on windows with a recent version of VisualStudiofootnote:[>= 2017, or buildtools with MSVC = 14.x],
-take care to have a CMake version supporting your version of Visual Studio.
-
-After cloning this repository, open a Command Prompt window and navigate to `sick_visionary_samples` directory. Run these additional git commands to have the correct submodules in place
-footnote:[Only necessary if you have fetched the files from the GitHub repository. If you have received the samples in a prepared package, the git commands can be skipped.]:
-
-* `git submodule update --init --recursive`
-
-=== Python
-
-Before you begin, ensure you have met the following requirements:
-
-* You have installed `pip`, which is a package manager for Python. If not, you can install it using the following command:
-
-[source,shell]
-----
-$ sudo apt install python3-pip
-----
-
-* You have installed the following Python libraries: `OpenCV`, `NumPy`, and `CryptodomeX`. If not, you can install them using pip:
-
-[source,shell]
-----
-$ pip3 install opencv-python
-$ pip3 install numpy
-$ pip3 install pycryptodomex
-----
-
-[NOTE]
-====
-Please replace the installation commands with the appropriate ones for your operating system or Python environment if necessary.
-====
-
-To run the Python welcome demo, execute the following command from the top-level directory:
-
-[source,bash]
-----
-python3 -m visionary_welcome.python.welcome -i192.168.1.10 -dVisionary-S
-----
-
-Depending on your environment, you may need to use `python` or `python3`. Remember to adjust the IP address (`-i`) and device type (`-d`) to match your specific device.
-
-=== C++
-
-To build the C++ samples, it is suggested to proceed like this
-footnote:[Also, other ways are possible]:
-
-* `cmake -B build` optionally also specify other options like -G for custom generator
-
-[NOTE]
-====
-If you run into WARNING_AS_ERROR issue with some compiler (which is enabled per default) just use the cmake override ```--compile-no-warning-as-error``` when configuring the project.
-====
-
-Now you can build the files with the chosen build-system you've generated them for,
-for instance, open the solution in VisualStudio or run make/ninja.
-
-* `cmake --build build`
-
-To run the C++ welcome demo, follow these steps:
-
-. Navigate to the `build/` directory from the top-level directory:
-
-[source,bash]
-----
-$ cd build/
-----
-
-. Execute the `welcome` demo with the specified IP address and device:
-
-[source,bash]
-----
-$ ./welcome -i127.0.0.1 -dVisionary-S
-----
-Remember to adjust the IP address (`-i`) and device type (`-d`) to match your specific device.
-
-== Support
-
-Depending on the nature of your question, there are two support channels:
-
-1. For questions regarding the code shared in this repo please check the FAQ first and link:../../issues[search if an issue already exists]. If a related issue doesn't exist, you can open a new issue using the link:../../issues/new/choose[issue form].
-2. For application or device specific questions look for common solutions and knowledge articles on the link:https://support.sick.com/[Sick Support Portal]. If your question is not answered there, open a ticket on the link:https://support.sick.com/[Sick Support Portal].
-
-== Keywords
-
-Visionary-S
-Visionary-T Mini
-SICK
-CX
+See link:LICENSE[LICENSE] for details.
